@@ -4,7 +4,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mahalaxmi Petroleum – Daily DSR</title>
 <style>
-body { font-family: Arial; background: #eef2f5; padding: 12px; margin: 0; }
+body <div id="loader" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);z-index:9999;justify-content:center;align-items:center;">
+  <div style="border:6px solid #f3f3f3;border-top:6px solid #0d6efd;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;"></div>
+</div>
+
+<style>
+@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+</style> { font-family: Arial; background: #eef2f5; padding: 12px; margin: 0; }
 .section { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 h2 { margin:0 0 10px; } h3 { margin:0 0 8px; font-size:16px; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
@@ -72,12 +78,18 @@ createInputs(paymentInputs,paymentLabels,"p");
 
 const fuelOrder=[...msLabels,...hsdLabels,...powerLabels,...testLabels];
 
+function showLoader(){ document.getElementById("loader").style.display="flex"; }
+function hideLoader(){ document.getElementById("loader").style.display="none"; }
+
 function submitFuel(){
   const dateVal=date.value;
   if(!dateVal){ alert("Please select a date."); return; }
   const values=fuelOrder.map(l=>Number(document.getElementById("f"+l).value)||0);
+  
+  showLoader();
   fetch(apiURL,{method:"POST",body:JSON.stringify({date:dateVal,block1:values})})
   .then(r=>r.json()).then(d=>{
+    hideLoader();
     if(d.error){ alert(d.error); return; }
     const [msQty, hsdQty, powerQty, msRate, hsdRate, powerRate] = d.fuelBlock;
     msSale.innerText=`MS: ${msQty} × ₹${msRate} = ₹${(msQty*msRate).toFixed(2)}`;
@@ -87,13 +99,15 @@ function submitFuel(){
   });
 }
 
-// New function to only send payments / expenses
 function submitPaymentsOnly(){
   const dateVal=date.value;
   if(!dateVal){ alert("Please select a date."); return; }
   const values=paymentLabels.map(l=>Number(document.getElementById("p"+l).value)||0);
+  
+  showLoader();
   fetch(apiURL,{method:"POST",body:JSON.stringify({date:dateVal,block2:values})})
   .then(r=>r.json()).then(d=>{
+    hideLoader();
     if(d.error){ alert(d.error); return; }
     finalHisab.innerText=`₹ ${d.finalHisab}`;
   });
@@ -101,3 +115,4 @@ function submitPaymentsOnly(){
 </script>
 </body>
 </html>
+
