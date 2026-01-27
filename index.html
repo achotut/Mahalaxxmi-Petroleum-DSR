@@ -11,7 +11,7 @@ h2 { margin:0 0 10px; }
 h3 { margin:0 0 8px; font-size:16px; }
 
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
-input { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
+input { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; text-align:left; }
 
 button { width:100%; padding:14px; font-size:18px; background:#0d6efd; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer; }
 button:hover { background:#0b5ed7; }
@@ -59,7 +59,6 @@ button:hover { background:#0b5ed7; }
     <p>Daily Sales Register</p>
   </div>
 </div>
-
 
 <div id="loader"><div></div></div>
 
@@ -125,15 +124,32 @@ const testLabels = ["MS","HSD","Power"];
 const paymentLabels = ["Online Trf","Paytm","Cash1","Cash2","Cash3","Udhari","Advances","Incentive","Expenses","Hp Pay","CCMS"];
 
 function createInputs(container, labels, prefix){
-  labels.forEach(l => {
+  labels.forEach((l, index) => {
     const input = document.createElement("input");
-    input.type = "number";
+    input.type = "text";               // text for better mobile control
+    input.inputMode = "decimal";       // numeric keypad with decimal
+    input.pattern = "[0-9]*";          // hint for mobile
     input.placeholder = l;
     input.id = prefix + l;
+
+    // Auto-focus to next input on Enter
+    input.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === "Tab"){
+        e.preventDefault();
+        // find all inputs in container
+        const allInputs = Array.from(container.querySelectorAll("input"));
+        const nextIndex = allInputs.indexOf(e.target) + 1;
+        if(nextIndex < allInputs.length){
+          allInputs[nextIndex].focus();
+        }
+      }
+    });
+
     container.appendChild(input);
   });
 }
 
+// Create all inputs
 createInputs(msInputs, msLabels, "f");
 createInputs(hsdInputs, hsdLabels, "f");
 createInputs(powerInputs, powerLabels, "f");
@@ -145,7 +161,6 @@ const fuelOrder = [...msLabels, ...hsdLabels, ...powerLabels, ...testLabels];
 function showLoader(){ loader.style.display = "flex"; }
 function hideLoader(){ loader.style.display = "none"; }
 
-// Safety: never let loader hang
 window.addEventListener("unhandledrejection", hideLoader);
 
 function submitFuel(){
@@ -165,10 +180,7 @@ function submitFuel(){
 .then(r => r.json())
 .then(d => {
   hideLoader();
-  if (d.error) {
-    alert(d.error);
-    return;
-  }
+  if (d.error) { alert(d.error); return; }
 
   const [msQty, hsdQty, powerQty, msRate, hsdRate, powerRate] = d.fuelBlock;
 
@@ -177,12 +189,7 @@ function submitFuel(){
   powerSale.innerText = `Power: ${powerQty} × ₹${powerRate} = ₹${(powerQty * powerRate).toFixed(2)}`;
   totalSale.innerText = `Total Sale ₹ ${d.totalSale}`;
 })
-.catch(err => {
-  hideLoader();
-  alert("Backend not reachable");
-  console.error(err);
-});
-
+.catch(err => { hideLoader(); alert("Backend not reachable"); console.error(err); });
 }
 
 function submitPaymentsOnly(){
@@ -202,18 +209,10 @@ function submitPaymentsOnly(){
 .then(r => r.json())
 .then(d => {
   hideLoader();
-  if (d.error) {
-    alert(d.error);
-    return;
-  }
+  if(d.error){ alert(d.error); return; }
   finalHisab.innerText = `₹ ${d.finalHisab}`;
 })
-.catch(err => {
-  hideLoader();
-  alert("Backend not reachable");
-  console.error(err);
-});
-
+.catch(err => { hideLoader(); alert("Backend not reachable"); console.error(err); });
 }
 </script>
 
