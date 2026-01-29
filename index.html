@@ -6,16 +6,63 @@
 
 <style>
 body { font-family: Arial; background: #eef2f5; padding: 12px; margin: 0; }
-.section { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+/* HEADER */
+.header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:#ffffff;
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:15px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.12);
+}
+.logo { height:70px; }
+.title h1 { margin:0; color:#c40000; font-size:22px; }
+.title p { margin:0; color:#003087; font-weight:bold; letter-spacing:1px; }
+.prevVal {
+  font-size:12px;
+  color:#666;
+  text-align:right;
+}
+.fieldWrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.prevVal {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* SECTIONS */
+.section { background:#fff; padding:15px; margin-bottom:15px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
 h2 { margin:0 0 10px; } 
 h3 { margin:0 0 8px; font-size:16px; }
 
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
-input { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; text-align:left; }
+input { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
 
-button { width:100%; padding:14px; font-size:18px; background:#0d6efd; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer; }
+/* BUTTON */
+button {
+  width:100%;
+  padding:14px;
+  font-size:18px;
+  background:#0d6efd;
+  color:white;
+  border:none;
+  border-radius:8px;
+  margin-top:10px;
+  cursor:pointer;
+  transition:0.2s;
+}
 button:hover { background:#0b5ed7; }
+button:disabled { background:#9bb7e0; cursor:not-allowed; }
 
+/* READONLY */
 .readonly { background:#f1f4f7; padding:12px; border-radius:6px; text-align:center; font-weight:bold; }
 
 .ms { background:#e7f3ff; }
@@ -23,29 +70,30 @@ button:hover { background:#0b5ed7; }
 .power { background:#f3e8ff; }
 .testing { background:#fef4e6; }
 
-.total { background:#d1e7dd; font-size:22px; margin-top:10px; }
-.final { background:#fff3cd; font-size:24px; margin-top:10px; }
+.total { background:#d1e7dd; font-size:22px; }
+.final { background:#fff3cd; font-size:24px; }
 
+/* LOADER */
 #loader {
   display:none;
   position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(255,255,255,0.7);
+  inset:0;
+  background:rgba(255,255,255,0.75);
   z-index:9999;
   justify-content:center;
   align-items:center;
 }
 #loader div {
-  border:6px solid #f3f3f3;
+  border:6px solid #eee;
   border-top:6px solid #0d6efd;
   border-radius:50%;
-  width:50px; height:50px;
+  width:50px;
+  height:50px;
   animation:spin 1s linear infinite;
 }
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% { transform:rotate(0deg); }
+  100% { transform:rotate(360deg); }
 }
 </style>
 </head>
@@ -90,7 +138,8 @@ button:hover { background:#0b5ed7; }
     <div class="grid" id="testingInputs"></div>
   </div>
 
-  <button onclick="submitFuel()">Calculate Sale</button>
+  <button id="btnFuel" onclick="submitFuel()">
+Calculate Sale</button>
 </div>
 
 <div class="section">
@@ -106,7 +155,7 @@ button:hover { background:#0b5ed7; }
 <div class="section">
   <h2>Payments & Expenses</h2>
   <div class="grid" id="paymentInputs"></div>
-  <button onclick="submitPaymentsOnly()">Calculate Final Hisab</button>
+  <button id="btnPay" onclick="submitPaymentsOnly()">Calculate Final Hisab</button>
 </div>
 
 <div class="section">
@@ -115,7 +164,12 @@ button:hover { background:#0b5ed7; }
 </div>
 
 <script>
-const apiURL = "https://script.google.com/macros/s/AKfycbyFqFZOmK-3UIK_AFCtOVRtx6-IYz25MpW65u-UWehDj2smOMspu-7qbwI7vntkURqk/exec";
+const apiURL = "https://script.google.com/macros/s/AKfycbwgPyYmJ-vUB9fXrkXBS8IIvqVkqJrGpdLvmcc_XMLGfWxe9yTHoepGThNYcmKKVTw_/exec";
+
+const btnFuel = document.getElementById("btnFuel");
+const btnPay = document.getElementById("btnPay");
+const dateInput = document.getElementById("date");
+const loader = document.getElementById("loader");
 
 const msLabels = ["MS1","MS2","MS3","MS4"];
 const hsdLabels = ["HSD1","HSD2"];
@@ -123,45 +177,95 @@ const powerLabels = ["Power1","Power2"];
 const testLabels = ["MS","HSD","Power"];
 const paymentLabels = ["Online Trf","Paytm","Cash1","Cash2","Cash3","Udhari","Advances","Incentive","Expenses","Hp Pay","CCMS"];
 
-function createInputs(container, labels, prefix){
-  labels.forEach((l, index) => {
-    const input = document.createElement("input");
-    input.type = "text";               // text for better mobile control
-    input.inputMode = "decimal";       // numeric keypad with decimal
-    input.pattern = "[0-9]*";          // hint for mobile
-    input.placeholder = l;
-    input.id = prefix + l;
+function createInputs(container, labels, prefix, showPrev=false){
+  labels.forEach(l => {
 
-    // Auto-focus to next input on Enter
+    const wrap = document.createElement("div");
+    wrap.className = "fieldWrap";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "decimal";
+    input.placeholder = l;
+    input.id = prefix + l.replace(/\s+/g,'');
+
     input.addEventListener("keydown", function(e){
-      if(e.key === "Enter" || e.key === "Tab"){
+      if(e.key === "Enter"){
         e.preventDefault();
-        // find all inputs in container
-        const allInputs = Array.from(container.querySelectorAll("input"));
-        const nextIndex = allInputs.indexOf(e.target) + 1;
-        if(nextIndex < allInputs.length){
-          allInputs[nextIndex].focus();
-        }
+        const all = Array.from(document.querySelectorAll("input"));
+        const idx = all.indexOf(e.target);
+        if(idx < all.length-1) all[idx+1].focus();
       }
     });
 
-    container.appendChild(input);
+    wrap.appendChild(input);
+
+    if(showPrev){
+      const prev = document.createElement("div");
+      prev.className = "prevVal";
+      prev.id = "prev_"+prefix+l.replace(/\s+/g,'');
+      prev.innerText = "Prev —";
+      wrap.appendChild(prev);
+    }
+
+    container.appendChild(wrap);
   });
 }
 
-// Create all inputs
-createInputs(msInputs, msLabels, "f");
-createInputs(hsdInputs, hsdLabels, "f");
-createInputs(powerInputs, powerLabels, "f");
-createInputs(testingInputs, testLabels, "f");
-createInputs(paymentInputs, paymentLabels, "p");
+
+
+// Fuel meters → show previous
+createInputs(msInputs, msLabels, "f", true);
+createInputs(hsdInputs, hsdLabels, "f", true);
+createInputs(powerInputs, powerLabels, "f", true);
+
+// Testing → no previous
+createInputs(testingInputs, testLabels, "f", false);
+
+// Payments → no previous
+createInputs(paymentInputs, paymentLabels, "p", false);
 
 const fuelOrder = [...msLabels, ...hsdLabels, ...powerLabels, ...testLabels];
 
-function showLoader(){ loader.style.display = "flex"; }
-function hideLoader(){ loader.style.display = "none"; }
+function showLoader(){
+  loader.style.display = "flex";
+  btnFuel.disabled = true;
+  btnPay.disabled = true;
+}
 
+function hideLoader(){
+  loader.style.display = "none";
+  btnFuel.disabled = false;
+  btnPay.disabled = false;
+}
 window.addEventListener("unhandledrejection", hideLoader);
+
+function loadPrevious(){
+  const d = dateInput.value;
+  if(!d) return;
+
+  fetch(apiURL + "?date=" + d)
+    .then(r => r.json())
+    .then(res => {
+
+      if(!res.prev){
+        document.querySelectorAll(".prevVal")
+          .forEach(el => el.innerText = "Prev —");
+        return;
+      }
+
+    const meterLabels = [...msLabels, ...hsdLabels, ...powerLabels];
+
+meterLabels.forEach((label, i) => {
+  const el = document.getElementById("prev_f"+label);
+  if(el){
+    el.innerText = "Prev: " + (res.prev[i] ?? "—");
+  }
+});
+
+    })
+    .catch(()=>{});
+}
 
 function submitFuel(){
   const dateVal = date.value;
@@ -194,26 +298,47 @@ function submitFuel(){
 
 function submitPaymentsOnly(){
   const dateVal = date.value;
-  if(!dateVal){ alert("Please select a date."); return; }
+  if(!dateVal){
+    alert("Please select a date.");
+    return;
+  }
 
-  const values = paymentLabels.map(l => Number(document.getElementById("p"+l).value) || 0);
+  const values = paymentLabels.map(l =>
+    Number(document.getElementById("p"+l.replace(/\s+/g,'')).value) || 0
+  );
 
   showLoader();
+
   fetch(apiURL, {
-  method: "POST",
-  body: JSON.stringify({
-    date: dateVal,
-    block2: values
+    method: "POST",
+    body: JSON.stringify({
+      date: dateVal,
+      block2: values
+    })
   })
-})
-.then(r => r.json())
-.then(d => {
-  hideLoader();
-  if(d.error){ alert(d.error); return; }
-  finalHisab.innerText = `₹ ${d.finalHisab}`;
-})
-.catch(err => { hideLoader(); alert("Backend not reachable"); console.error(err); });
+  .then(r => r.json())   // ✅ FIRST parse JSON
+  .then(d => {
+    hideLoader();
+
+    if(d.error){
+      alert(d.error);
+      return;
+    }
+
+    finalHisab.innerText = `₹ ${d.finalHisab}`;
+
+    // 🔒 lock after final
+    dateInput.disabled = true;
+    btnFuel.disabled = true;
+    btnPay.disabled = true;
+  })
+  .catch(err => {
+    hideLoader();
+    alert("Backend not reachable");
+    console.error(err);
+  });
 }
+dateInput.addEventListener("change", loadPrevious);
 </script>
 
 </body>
