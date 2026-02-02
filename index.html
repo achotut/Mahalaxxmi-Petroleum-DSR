@@ -178,7 +178,7 @@ Calculate Sale</button>
 </div>
 
 <script>
-const apiURL = "https://script.google.com/macros/s/AKfycbwgPyYmJ-vUB9fXrkXBS8IIvqVkqJrGpdLvmcc_XMLGfWxe9yTHoepGThNYcmKKVTw_/exec";
+const apiURL = "https://script.google.com/macros/s/AKfycbzwBzFIxfTgJxTQHWtitgV-_znHHgqysjpvUn8DlYNrKgaWMn8HBuGOxKOA1SezEgZ7/exec";
 
 const btnFuel = document.getElementById("btnFuel");
 const btnPay = document.getElementById("btnPay");
@@ -189,7 +189,7 @@ const msLabels = ["MS1","MS2","MS3","MS4"];
 const hsdLabels = ["HSD1","HSD2"];
 const powerLabels = ["Power1","Power2"];
 const testLabels = ["MS","HSD","Power"];
-const paymentLabels = ["Online Trf","Paytm","Cash1","Cash2","Cash3","Udhari","Advances","Incentive","Expenses","Hp Pay","CCMS"];
+const paymentLabels = ["Online Trf","Paytm","Cash1","Cash2","Cash3","Udhari","Advances","Salary","Incentive","Expenses","Hp Pay","CCMS"];
 
 function createInputs(container, labels, prefix, showPrev=false){
   labels.forEach(l => {
@@ -317,6 +317,7 @@ function submitPaymentsOnly(){
     return;
   }
 
+  // ORDER STRICTLY FOLLOWS paymentLabels (incl. Salary)
   const values = paymentLabels.map(l =>
     Number(document.getElementById("p"+l.replace(/\s+/g,'')).value) || 0
   );
@@ -330,7 +331,7 @@ function submitPaymentsOnly(){
       block2: values
     })
   })
-  .then(r => r.json())   // ✅ FIRST parse JSON
+  .then(r => r.json())
   .then(d => {
     hideLoader();
 
@@ -341,7 +342,7 @@ function submitPaymentsOnly(){
 
     finalHisab.innerText = `₹ ${d.finalHisab}`;
 
-    // 🔒 lock after final
+    // 🔒 lock after final submit
     dateInput.disabled = true;
     btnFuel.disabled = true;
     btnPay.disabled = true;
@@ -352,6 +353,7 @@ function submitPaymentsOnly(){
     console.error(err);
   });
 }
+
 dateInput.addEventListener("change", loadPrevious);
 </script>
 
